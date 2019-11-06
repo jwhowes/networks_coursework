@@ -1,28 +1,39 @@
 '''TODO (for client and server, in order):
-	1. POST
-	2. Get a list of 100 most recent messages (response option 1 from client)
-	3. QUIT
+	* Get a list of 100 most recent messages (response option 1 from client)
+	* QUIT
+	* Logging
 '''
 
-import sys
-import os
-import json
+import sys, os, json
+from datetime import datetime
 from socket import *
 
-port = int(sys.argv[2])
 IP = sys.argv[1]
+port = int(sys.argv[2])
+
+boards = next(os.walk("./board"))[1]
 
 def serve(socket, addr):
 	message = json.loads(socket.recv(port).decode())
 	res = {}
 	if message["HEAD"] == "GET_BOARDS":
 		res["STATUS"] = 200
-		res["BODY"] = json.dumps(next(os.walk("./board"))[1])
+		res["BODY"] = boards
 	elif message["HEAD"] == "POST_MESSAGE":
-		res["STATUS"] = 200
-		print(message)
+		if message["BOARD"].isdigit():
+			if int(message["BOARD"]) > len(boards):
+				res["STATUS"] = 404
+			else:
+				res["STATUS"] = 200
+				message["TITLE"] = message["TITLE"].replace(" ", "_")
+				message["TITLE"] = datetime.today().strftime("%Y%m%d-%H%M%S-") + message["TITLE"]
+				message_file = open("./board/" + boards[int(message["BOARD"]) - 1] + "/" + message["TITLE"] + ".txt", "w+")
+				message_file.write(message["CONTENT"])
+				message_file.close()  # Can I just write the whole thing to a json file? (It would be a lot easier to read them).
+		else:
+			res["STATUS"] = 422
 	else:
-		res["STATUS"] = 400 #bad request
+		res["STATUS"] = 400  # Bad request
 	res = json.dumps(res)
 	socket.send(res.encode())
 
