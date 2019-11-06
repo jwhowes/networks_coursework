@@ -1,3 +1,6 @@
+'''TODO:
+	* Make the error message personalised to the status code
+'''
 import sys, json, os
 from socket import *
 
@@ -12,29 +15,45 @@ def send(message):
 	clientSock.close()
 	return res
 
+def POST_MESSAGE():
+	board = input("Enter the board number: ")
+	title = input("Enter the message title: ")
+	content = input("Enter the message content: ")
+	message = {
+			"HEAD" : "POST_MESSAGE",
+			"BOARD" : board,
+			"TITLE" : title,
+			"CONTENT" : content
+		}
+	res = send(message)
+	if res["STATUS"] == 200:
+		print("Post successful")
+	else:
+		print("Error")
+	print()
+
+def GET_MESSAGES(board_num):
+	message = {
+				"HEAD" : "GET_MESSAGES",
+				"TITLE" : boards[int(instr) - 1]
+			}
+	res = send(message)
+	if res["STATUS"] == 200:
+		print("Success. Here are the messages: ")
+		#TODO: Print messages in response
+	else:
+		print("Error")
+
+
 def handle_instruction(instr):
 	if instr == "POST":
-		board = input("Enter the board number: ")
-		title = input("Enter the message title: ")
-		content = input("Enter the message content: ")
-		message = {
-				"HEAD" : "POST_MESSAGE",
-				"BOARD" : board,
-				"TITLE" : title,
-				"CONTENT" : content
-			}
+		POST_MESSAGE()
 	elif instr.isdigit():
-		# TODO: send a request to the server for the 100 most recent message from that board.
+		GET_MESSSAGES(instr)
 	else:
 		print("Invalid instruction")
 		print()
 		return
-	res = send(message)
-	if res["STATUS"] == 200:
-		print("Instruction successful")
-	else:
-		print("Error") # TODO: make the error message personalised to the status code
-	print()
 
 message = {"HEAD" : "GET_BOARDS"}
 boards_res = send(message)
