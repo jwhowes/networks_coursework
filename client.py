@@ -4,6 +4,7 @@
 import sys, json, os
 from socket import *
 
+boards = []
 serverIP = sys.argv[1]
 serverPort = int(sys.argv[2])
 
@@ -14,6 +15,21 @@ def send(message):
 	res = json.loads(clientSock.recv(serverPort))
 	clientSock.close()
 	return res
+
+def GET_BOARDS():
+	global boards
+	message = {"HEAD" : "GET_BOARDS"}
+	res = send(message)
+	if res["STATUS"] == 200:
+		print("successfully retrieved boards")
+		print("These are the current message boards:")
+		boards = res["BODY"]
+		for i in range(len(boards)):
+			print(str(i + 1) + ". " + boards[i] + ";", end=" ")
+		print()
+	else:
+		print("Couldn't get boards")
+		exit()
 
 def POST_MESSAGE():
 	board = input("Enter the board number: ")
@@ -30,41 +46,41 @@ def POST_MESSAGE():
 		print("Post successful")
 	else:
 		print("Error")
-	print()
 
 def GET_MESSAGES(board_num):
+	if board_num <= 0 or board_num > len(boards):
+		print("Board not found")
+		return
 	message = {
 				"HEAD" : "GET_MESSAGES",
-				"TITLE" : boards[int(instr) - 1]
+				"BOARD" : boards[board_num - 1]
 			}
 	res = send(message)
 	if res["STATUS"] == 200:
-		print("Success. Here are the messages: ")
-		#TODO: Print messages in response
+		if len(res["MESSAGES"]) > 0:
+			print("Success. Here are the messages: ")
+			for message in res["MESSAGES"]:
+				print()
+				print("    " + message["TITLE"])
+				print("        " + message["CONTENT"])
+		else:
+			print("There are no messages in that boad")
 	else:
 		print("Error")
-
 
 def handle_instruction(instr):
 	if instr == "POST":
 		POST_MESSAGE()
 	elif instr.isdigit():
-		GET_MESSSAGES(instr)
+		GET_MESSAGES(int(instr))
+	elif instr == "QUIT":
+		exit()
 	else:
 		print("Invalid instruction")
-		print()
-		return
+	print()
 
-message = {"HEAD" : "GET_BOARDS"}
-boards_res = send(message)
-if boards_res["STATUS"] == 200:
-	print("successfully retrieved boards")
-	print("These are the current message boards:")
-	boards = boards_res["BODY"]
-	for i in range(len(boards)):
-		print(str(i + 1) + ". " + boards[i] + ";", end=" ")
+GET_BOARDS()
 
-print()
 while True:
 	instr = input("Enter your instruction: ")
 	handle_instruction(instr)
