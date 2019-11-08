@@ -64,7 +64,7 @@ def GET_MESSAGES(board_num):
 				print("    " + message["TITLE"])
 				print("        " + message["CONTENT"])
 		else:
-			print("There are no messages in that boad")
+			print("There are no messages in that board")
 	else:
 		print("Error")
 

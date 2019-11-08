@@ -1,5 +1,4 @@
 '''TODO (for client and server):
-	* QUIT
 	* Logging
 	* Error handling
 '''
