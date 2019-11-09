@@ -1,5 +1,5 @@
 '''TODO:
-	* Make the error message personalised to the status code
+	* Work on implementing recvall better
 '''
 import sys, json, os
 from socket import *
@@ -10,9 +10,18 @@ serverPort = int(sys.argv[2])
 
 def send(message):
 	clientSock = socket(AF_INET, SOCK_STREAM)
-	clientSock.connect((serverIP, serverPort))
+	if clientSock.connect_ex((serverIP, serverPort)) != 0:
+		print("Error. Port unavailable")
+		exit()
 	clientSock.send(json.dumps(message).encode())
-	res = json.loads(clientSock.recv(serverPort))
+	res = [None]
+	res[0] = clientSock.recv(serverPort).decode()
+	i = 0
+	while len(res[i]) == serverPort:  # Why is the longest message length always the port number?
+		res.append(clientSock.recv(serverPort).decode())
+		i += 1
+	res = "".join(res)
+	res = json.loads(res)
 	clientSock.close()
 	return res
 
@@ -21,13 +30,15 @@ def GET_BOARDS():
 	message = {"HEAD" : "GET_BOARDS"}
 	res = send(message)
 	if res["STATUS"] == 200:
-		print("successfully retrieved boards")
+		print("Successfully retrieved boards")
 		print("These are the current message boards:")
 		boards = res["BODY"]
 		for i in range(len(boards)):
 			print(str(i + 1) + ". " + boards[i] + ";", end=" ")
 		print()
-	else:
+	elif res["STATUS"] == 422:
+		print("Error 422. Unprocessable entity (missing or invalid data)")
+	elif res["STATUS"] == 404:
 		print("Couldn't get boards")
 		exit()
 
@@ -35,21 +46,33 @@ def POST_MESSAGE():
 	board = input("Enter the board number: ")
 	title = input("Enter the message title: ")
 	content = input("Enter the message content: ")
+	if not board.isdigit():
+		print("Error 404. Board not found")
+		return
+	if int(board) < 0 or int(board) > len(boards):
+		print("Error 404. Board not found")
+		return
 	message = {
 			"HEAD" : "POST_MESSAGE",
-			"BOARD" : board,
+			"BOARD" : boards[int(board) - 1],
 			"TITLE" : title,
 			"CONTENT" : content
 		}
 	res = send(message)
 	if res["STATUS"] == 200:
 		print("Post successful")
+	elif res["STATUS"] == 404:
+		print("Error 404. Board not found")
+	elif res["STATUS"] == 400:
+		print("Error 400. Invalid token in message title")
+	elif res["STATUS"] == 422:
+		print("Error 422. Unprocessable entity (missing or invalid data)")
 	else:
 		print("Error")
 
 def GET_MESSAGES(board_num):
 	if board_num <= 0 or board_num > len(boards):
-		print("Board not found")
+		print("Error 404. Board not found")
 		return
 	message = {
 				"HEAD" : "GET_MESSAGES",
@@ -65,8 +88,13 @@ def GET_MESSAGES(board_num):
 				print("        " + message["CONTENT"])
 		else:
 			print("There are no messages in that board")
+	elif res["STATUS"] == 404:
+		print("Error 404. Board not found")
+	elif res["STATUS"] == 422:
+		print("Error 422. Unprocessable entity (missing or invalid data)")
 	else:
 		print("Error")
+
 
 def handle_instruction(instr):
 	if instr == "POST":
@@ -76,7 +104,7 @@ def handle_instruction(instr):
 	elif instr == "QUIT":
 		exit()
 	else:
-		print("Invalid instruction")
+		print("Error 400. Bad request")
 	print()
 
 GET_BOARDS()
