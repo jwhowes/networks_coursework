@@ -14,13 +14,12 @@ def send(message):
 		print("Error. Port unavailable")
 		exit()
 	clientSock.send(json.dumps(message).encode())
-	res = [None]
-	res[0] = clientSock.recv(serverPort).decode()
-	i = 0
-	while len(res[i]) == serverPort:  # Why is the longest message length always the port number?
-		res.append(clientSock.recv(serverPort).decode())
-		i += 1
-	res = "".join(res)
+	res = ""
+	chunk = clientSock.recv(4096).decode()
+	while len(chunk) == 4096:
+		res += chunk
+		chunk = clientSock.recv(4096).decode()
+	res += chunk
 	res = json.loads(res)
 	clientSock.close()
 	return res
