@@ -29,7 +29,7 @@ class ClientSocket(threading.Thread):
 					res["STATUS"] = 404
 				else:
 					res["STATUS"] = 200
-					res["BODY"] = boards
+					res["BOARDS"] = boards
 			elif message["HEAD"] == "POST_MESSAGE":
 				if "BOARD" not in message or "TITLE" not in message or "CONTENT" not in message:
 					res["STATUS"] = 422
@@ -77,9 +77,9 @@ class ClientSocket(threading.Thread):
 
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind((IP, port))
+
 serverSocket.listen(1)
 print("The server is running on " + IP + ":" + str(port))
-
 while True:
 	clientSocket, addr = serverSocket.accept()
 	clientThread = ClientSocket(clientSocket, addr)

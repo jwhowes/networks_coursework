@@ -31,7 +31,7 @@ def GET_BOARDS():
 	if res["STATUS"] == 200:
 		print("Successfully retrieved boards")
 		print("These are the current message boards:")
-		boards = res["BODY"]
+		boards = res["BOARDS"]
 		for i in range(len(boards)):
 			print(str(i + 1) + ". " + boards[i] + ";", end=" ")
 		print()
