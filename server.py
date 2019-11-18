@@ -14,15 +14,20 @@ class ClientSocket(threading.Thread):
 		self.addr = addr
 	def run(self):
 		global boards
-		message = json.loads(self.socket.recv(port).decode())
+		#message = json.loads(self.socket.recv(port).decode())
+		message = ""
+		chunk = self.socket.recv(4096).decode()
+		while len(chunk) == 4096:
+			message += chunk
+			chunk = self.socket.recv(4096).decode()
+		message += chunk
+		message = json.loads(message)
 		res = {}
 		if "HEAD" not in message:
 			res["STATUS"] = 422
-			log_entry = self.addr[0] + ":" + str(self.addr[1]) + "\t" + datetime.today().strftime(
-				"%A %d/%m/%Y %H:%M:%S") + "\t" + "N/A" + "\t"
+			log_entry = self.addr[0] + ":" + str(self.addr[1]) + "\t" + datetime.today().strftime("%A %d/%m/%Y %H:%M:%S") + "\t" + "N/A" + "\t"
 		else:
-			log_entry = self.addr[0] + ":" + str(self.addr[1]) + "\t" + datetime.today().strftime("%A %d/%m/%Y %H:%M:%S") + "\t" + \
-						message["HEAD"] + "\t"
+			log_entry = self.addr[0] + ":" + str(self.addr[1]) + "\t" + datetime.today().strftime("%A %d/%m/%Y %H:%M:%S") + "\t" + message["HEAD"] + "\t"
 			if message["HEAD"] == "GET_BOARDS":
 				boards = next(os.walk("./board"))[1]  # Should I be retrieving boards again every time?
 				if len(boards) == 0:
