@@ -58,11 +58,10 @@ class ClientSocket(threading.Thread):
 				elif message["BOARD"] in boards:
 					res["STATUS"] = 200
 					i = 0
-					while i < 100 and i < len(os.listdir("./board/" + message["BOARD"])):
-						message_file = open(
-							"./board/" + message["BOARD"] + "/" + os.listdir("./board/" + message["BOARD"])[i], "r")
-						res["MESSAGES"].append(
-							{"TITLE": os.listdir("./board/" + message["BOARD"])[i], "CONTENT": message_file.readline()})
+					files = sorted(os.listdir("./board/" + message["BOARD"]), key=lambda x: os.stat("./board/" + message["BOARD"] + "/" + x))
+					while i < 100 and i < len(files):
+						message_file = open("./board/" + message["BOARD"] + "/" + files[i], "r")
+						res["MESSAGES"].append({"TITLE": files[i], "CONTENT": message_file.readline()})
 						message_file.close()
 						i += 1
 				else:
