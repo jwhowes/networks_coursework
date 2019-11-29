@@ -16,7 +16,6 @@ class ClientSocket(threading.Thread):
 		self.addr = addr
 	def run(self):
 		global boards, lock
-		#message = json.loads(self.socket.recv(port).decode())
 		message = ""
 		chunk = self.socket.recv(4096).decode()
 		while len(chunk) == 4096:
