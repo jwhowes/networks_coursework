@@ -7,13 +7,15 @@ port = int(sys.argv[2])
 
 boards = next(os.walk("./board"))[1]
 
+lock = threading.Lock()
+
 class ClientSocket(threading.Thread):
 	def __init__(self, socket, addr):
 		threading.Thread.__init__(self)
 		self.socket = socket
 		self.addr = addr
 	def run(self):
-		global boards
+		global boards, lock
 		#message = json.loads(self.socket.recv(port).decode())
 		message = ""
 		chunk = self.socket.recv(4096).decode()
@@ -46,9 +48,11 @@ class ClientSocket(threading.Thread):
 						message["TITLE"] = message["TITLE"].replace(" ", "_")
 						message["TITLE"] = datetime.today().strftime("%Y%m%d-%H%M%S-") + message["TITLE"]
 						try:
-							message_file = open("./board/" + message["BOARD"] + "/" + message["TITLE"] + ".txt", "a+")
+							lock.acquire()
+							message_file = open("./board/" + message["BOARD"] + "/" + message["TITLE"] + ".txt", "w+")
 							message_file.write(message["CONTENT"])
 							message_file.close()  # Can I just write the whole thing to a json file? (It would be a lot easier to read them).
+							lock.release()
 						except:
 							res["STATUS"] = 400
 			elif message["HEAD"] == "GET_MESSAGES":
@@ -72,9 +76,11 @@ class ClientSocket(threading.Thread):
 			log_entry += "OK\n"
 		else:
 			log_entry += "Error\n"
+		lock.acquire()
 		log_file = open("server.log", "a+")
 		log_file.write(log_entry)
 		log_file.close()
+		lock.release()
 		res = json.dumps(res)
 		self.socket.send(res.encode())
 		self.socket.close()
