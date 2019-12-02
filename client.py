@@ -26,7 +26,7 @@ def send(message):
 	clientSock.close()  # Once the server's response has been fully received, the TCP socket is closed
 	return res
 
-def GET_BOARDS():
+def get_boards():
 	"""Processes a GET_BOARDS request"""
 	global boards
 	message = {"HEAD": "GET_BOARDS"}
@@ -46,7 +46,7 @@ def GET_BOARDS():
 		print("Couldn't get boards")
 		exit()
 
-def POST_MESSAGE():
+def post_message():
 	"""Processes a POST_MESSAGE request"""
 	# All data is taken as input from the user
 	board = input("Enter the board number: ")
@@ -79,7 +79,7 @@ def POST_MESSAGE():
 	else:
 		print("Error")
 
-def GET_MESSAGES(board_num):
+def get_messages(board_num):
 	"""Processes a GET_MESSAGES request"""
 	if board_num <= 0 or board_num > len(boards):  # If the board number is invalid, a 404 error is printed
 		print("Error 404. Board not found")
@@ -111,16 +111,16 @@ def GET_MESSAGES(board_num):
 def handle_instruction(instr):
 	"""Processes user inputs"""
 	if instr == "POST":
-		POST_MESSAGE()
+		post_message()
 	elif instr.isdigit():
-		GET_MESSAGES(int(instr))
+		get_messages(int(instr))
 	elif instr == "QUIT":
 		exit()  # If a quit command is given, the client program exits.
 	else:
 		print("Error 400. Bad request")
 	print()
 
-GET_BOARDS()  # When the client first connects, a GET_BOARDS request is submitted to print the boards for the user
+get_boards()  # When the client first connects, a GET_BOARDS request is submitted to print the boards for the user
 
 while True:
 	# The client processes user requests until a QUIT command is given
