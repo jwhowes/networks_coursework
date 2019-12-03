@@ -2,10 +2,21 @@ import sys, os, json, threading
 from datetime import datetime
 from socket import *
 
+if len(sys.argv) < 3:  # If the user doesn't supply enough arguments, print error and exit
+	print("Error. Please enter IP address and port number")
+	exit()
+
 IP = sys.argv[1]
-port = int(sys.argv[2])
+port = sys.argv[2]
+if not port.isdigit():  # If the port is not an integer, print error and exit
+	print("Error. Port number should be an integer")
+	exit()
+port = int(port)
 
 boards = next(os.walk("./board"))[1]
+if len(boards) == 0:  # If there are no boards, print error and exit.
+	print("Error. No message boards defined")
+	exit()
 
 lock = threading.Lock()
 
@@ -29,7 +40,7 @@ class ClientSocket(threading.Thread):
 		message = json.loads(message)  # Once the message is received, it is converted form JSON ready to be processed
 		res = {}
 		if "HEAD" not in message:
-			log_entry = self.addr[0] + ":" + str(self.addr[1]) + "\t" + datetime.today().strftime("%A %d/%m/%Y %H:%M:%S") + "\t" + "N/A" + "\t"
+			log_entry = self.addr[0] + ":" + str(self.addr[1]) + "\t" + datetime.today().strftime("%A %d/%m/%Y %H:%M:%S") + "\t" + "N/A" + "\t\t"
 			# If the message contains no HEAD (instruction), error 422 is returned.
 			res["STATUS"] = 422
 		else:
@@ -75,7 +86,7 @@ class ClientSocket(threading.Thread):
 					res["STATUS"] = 200
 					i = 0
 					# The messages are sorted by order of date and the top 100 are returned
-					files = sorted(os.listdir("./board/" + message["BOARD"]), key=lambda x: os.stat("./board/" + message["BOARD"] + "/" + x))
+					files = sorted(os.listdir("./board/" + message["BOARD"]), key=lambda x: os.stat("./board/" + message["BOARD"] + "/" + x).st_mtime)
 					while i < 100 and i < len(files):
 						# No need for lock here as the thread is just reading from the file
 						message_file = open("./board/" + message["BOARD"] + "/" + files[i], "r")
@@ -102,7 +113,12 @@ class ClientSocket(threading.Thread):
 
 
 serverSocket = socket(AF_INET, SOCK_STREAM)  # Main TCP server socket
-serverSocket.bind((IP, port))
+
+try:
+	serverSocket.bind((IP, port))
+except error as e:  # If there is an error when setting up the server socket, print error and exit.
+	print(e)
+	exit()
 
 serverSocket.listen(1)
 print("The server is running on " + IP + ":" + str(port))

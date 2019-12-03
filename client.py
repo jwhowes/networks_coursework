@@ -1,26 +1,36 @@
-'''TODO:
-	* Work on implementing recvall better
-'''
 import sys, json
 from socket import *
 
+if len(sys.argv) < 3:
+	print("Please enter IP address and port number")
+	exit()
+
 boards = []
 serverIP = sys.argv[1]
-serverPort = int(sys.argv[2])
+serverPort = sys.argv[2]
+if not serverPort.isdigit():
+	print("Server port number should be an integer")
+	exit()
+serverPort = int(serverPort)
 
 def send(message):
 	"""Sends a message to the server and returns the response"""
 	clientSock = socket(AF_INET, SOCK_STREAM)
+	clientSock.settimeout(10)  # Set timeout time to 10 seconds
 	if clientSock.connect_ex((serverIP, serverPort)) != 0:  # If the server is not online, an error is returned
-		print("Error. Port unavailable")
+		# print("Error. Server unavailable")
 		exit()
 	clientSock.send(json.dumps(message).encode())  # The message is sent as a single encoded JSON object
 	res = ""
-	chunk = clientSock.recv(4096).decode()
-	# Server responses are taken in chunks of 4096 until the entire response is received
-	while len(chunk) == 4096:
-		res += chunk
+	try:
 		chunk = clientSock.recv(4096).decode()
+		while len(chunk) == 4096:
+			res += chunk
+			chunk = clientSock.recv(4096).decode()
+		# Server responses are taken in chunks of 4096 until the entire response is received
+	except timeout:
+		print("Error. Connection timed out")  # If the socket times out, print error and except
+		exit()
 	res += chunk
 	res = json.loads(res)  # Server response is converted to JSON for later processing
 	clientSock.close()  # Once the server's response has been fully received, the TCP socket is closed
