@@ -18,8 +18,6 @@ if len(boards) == 0:  # If there are no boards, print error and exit.
 	print("Error. No message boards defined")
 	exit()
 
-lock = threading.Lock()
-
 class ClientSocket(threading.Thread):
 	def __init__(self, socket, addr):
 		"""Creates space for a ClientSocket thread as well as supplying it with a socket and sender address"""
@@ -28,8 +26,7 @@ class ClientSocket(threading.Thread):
 		self.addr = addr
 	def run(self):
 		"""Serves a request"""
-		global boards, lock  # boards variable contains a list of boards
-		# lock variable is used to lock other threads during critical sections
+		global boards  # boards variable contains a list of boards
 		message = ""
 		chunk = self.socket.recv(4096).decode()
 		# A message is read in chunks of 4096 characters until it is fully read.
@@ -63,18 +60,13 @@ class ClientSocket(threading.Thread):
 					else:
 						# If all information can be found, the message is inserted into the correct board
 						res["STATUS"] = 200
+						message["TITLE"] = str(message["TITLE"])
 						message["TITLE"] = message["TITLE"].replace(" ", "_")
 						message["TITLE"] = datetime.today().strftime("%Y%m%d-%H%M%S-") + message["TITLE"]
 						try:
-							# A lock is acquired during critical sections (such as file writing)
-							# to block other threads from accessing the files at the same time and causing errors
-							lock.acquire()
 							message_file = open("./board/" + message["BOARD"] + "/" + message["TITLE"] + ".txt", "w+")
 							message_file.write(message["CONTENT"])
 							message_file.close()
-							lock.release()
-							# After a thread is done with a file, the lock is released
-							# allowing other threads to access the file
 						except:
 							res["STATUS"] = 400  # Bad request (some issue in the file contents or title)
 			elif message["HEAD"] == "GET_MESSAGES":
@@ -88,7 +80,6 @@ class ClientSocket(threading.Thread):
 					# The messages are sorted by order of date and the top 100 are returned
 					files = sorted(os.listdir("./board/" + message["BOARD"]), key=lambda x: os.stat("./board/" + message["BOARD"] + "/" + x).st_mtime)
 					while i < 100 and i < len(files):
-						# No need for lock here as the thread is just reading from the file
 						message_file = open("./board/" + message["BOARD"] + "/" + files[i], "r")
 						res["MESSAGES"].append({"TITLE": files[i], "CONTENT": message_file.readline()})
 						message_file.close()
@@ -102,11 +93,9 @@ class ClientSocket(threading.Thread):
 			log_entry += "OK\n"
 		else:
 			log_entry += "Error\n"
-		lock.acquire()  # Ones again, a lock is required during this critical section.
 		log_file = open("server.log", "a+")
 		log_file.write(log_entry)
 		log_file.close()
-		lock.release()
 		res = json.dumps(res)  # The response is converted to JSON and sent back to the client
 		self.socket.send(res.encode())
 		self.socket.close()  # This is not persistent TCP so once the response has been sent, the socket is closed

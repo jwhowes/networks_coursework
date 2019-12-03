@@ -24,13 +24,13 @@ def send(message):
 	res = ""
 	try:
 		chunk = clientSock.recv(4096).decode()
-		while len(chunk) == 4096:
-			res += chunk
-			chunk = clientSock.recv(4096).decode()
-		# Server responses are taken in chunks of 4096 until the entire response is received
 	except timeout:
 		print("Error. Connection timed out")  # If the socket times out, print error and except
 		exit()
+	while len(chunk) == 4096:
+		res += chunk
+		chunk = clientSock.recv(4096).decode()
+	# Server responses are taken in chunks of 4096 until the entire response is received
 	res += chunk
 	res = json.loads(res)  # Server response is converted to JSON for later processing
 	clientSock.close()  # Once the server's response has been fully received, the TCP socket is closed
@@ -131,6 +131,13 @@ def handle_instruction(instr):
 	print()
 
 get_boards()  # When the client first connects, a GET_BOARDS request is submitted to print the boards for the user
+
+for i in range(501):
+	send({"HEAD": "POST_MESSAGE",
+	      "BOARD": "General_Board",
+	      "TITLE": i,
+	      "CONTENT": i
+	      })
 
 while True:
 	# The client processes user requests until a QUIT command is given
